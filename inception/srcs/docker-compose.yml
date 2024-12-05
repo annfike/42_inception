@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  nginx:
+    build: requirements/nginx/.
+    image: nginx                        
+    container_name: nginx               
+    networks:
+      - my_inception_network               
+    depends_on:
+      - wordpress                      
+    env_file: .env                      
+    ports:
+      - "443:443"                       
+    restart: always                
+    volumes:
+      - wp:/var/www/html    
+
+  wordpress:
+    build: requirements/wordpress/.
+    image: wordpress                    
+    container_name: wordpress           
+    env_file: .env                      
+    networks:
+      - my_inception_network              
+    depends_on:
+      - mariadb                      
+    restart: always                
+    expose:
+      - "9000"                       
+    volumes:
+      - wp:/var/www/html    
+
+  adminer:
+    container_name: Adminer     
+    build: requirements/adminer  
+    restart: always            
+    ports:
+      - "80:80"                 
+    networks:
+      - my_inception_network              
+  mariadb:
+    build: requirements/mariadb/.
+    image: mariadb                     
+    container_name: mariadb             
+    networks:
+      - my_inception_network               
+    env_file: .env                     
+    restart: always                 
+    expose:
+      - "3306"                         
+    volumes:
+      - sql:/var/lib/mysql        
+
+volumes:
+  wp:
+    name: wp_volume
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: ${DATA_PATH}/wordpress
+  sql:
+    name: db_volume
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: ${DATA_PATH}/mariadb
+
+networks:
+  my_inception_network:                      
+    driver: bridge                       
+
+# !! docker compose up --build
+# Build command : docker compose -p inception up --build -d
+# -p : name of the project
+# up : create and start the containers
+# --build : build the images if they don't exist or if they have been modified
+# -d : run the containers in the background
+
+# docker compose -p inception down
+# docker-compose -p inception ps
+
+# docker stop $(docker ps -a -q) - остановить все контейнеры
+# docker rm $(docker ps -a -q) - удалить все контейнеры
+# docker system prune - удаляет все неиспользуемые контейнеры, образы, тома и сети
